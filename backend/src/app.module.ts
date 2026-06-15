@@ -1,8 +1,6 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { GraphModule } from './graph/graph.module';
 import { NotesModule } from './notes/notes.module';
@@ -13,12 +11,17 @@ import { NotesModule } from './notes/notes.module';
       isGlobal: true,
       envFilePath: '.env',
     }),
-    MongooseModule.forRoot(process.env.MONGO_URI || 'mongodb://localhost:27017/knowledge-graph'),
+    MongooseModule.forRootAsync({
+      useFactory: (configService: ConfigService) => {
+        const uri = configService.get<string>('MONGO_URI');
+        if (!uri) throw new Error('MONGO_URI is not defined in .env');
+        return { uri };
+      },
+      inject: [ConfigService],
+    }),
     AuthModule,
     GraphModule,
     NotesModule,
   ],
-  controllers: [AppController],
-  providers: [AppService],
 })
 export class AppModule {}
