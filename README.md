@@ -59,7 +59,7 @@ Make sure you have these installed before running the project:
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/your-username/knowledge-graph.git
+git clone https://github.com/kamalinda-whitepulse/knowledge-graph.git
 cd knowledge-graph
 ```
 
