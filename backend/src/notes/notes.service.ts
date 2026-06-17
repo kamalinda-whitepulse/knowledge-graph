@@ -45,9 +45,17 @@ export class NotesService {
     content?: string;
     tags?: string[];
   }) {
+    // explicitly allowlist only safe fields
+    const { title, content, tags } = body;
     const note = await this.noteModel.findOneAndUpdate(
       { _id: id, userId },
-      { $set: body },
+      { 
+        $set: {
+        ...(title   !== undefined && { title }),
+        ...(content !== undefined && { content }),
+        ...(tags    !== undefined && { tags }), 
+        }
+      },  
       // return updated document
       { new: true },       
     );
@@ -64,8 +72,10 @@ export class NotesService {
 
   // --- SEARCH ------------------------------------
   async searchNotes(userId: string, query: string) {
+    // escape special characters to prevent ReDoS attacks
+    const escaped = query.replace(/[.*+?^()|[\]\\]/g, '\\$&');
     // case insensitive
-    const regex = new RegExp(query, 'i'); // case insensitive
+    const regex = new RegExp(escaped, 'i');
     return this.noteModel.find({
       userId,
       $or: [

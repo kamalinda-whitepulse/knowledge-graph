@@ -1,9 +1,13 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, Request, UseGuards} from '@nestjs/common';
+import {
+  Controller, Get, Post, Put, Delete,
+  Body, Param, Query, Request, UseGuards
+} from '@nestjs/common';
 import { NotesService } from './notes.service';
 import { JwtAuthGuard } from '../common/jwt-auth.guard';
+import { CreateNoteDto } from './dto/create-note.dto';
+import { UpdateNoteDto } from './dto/update-note.dto';
 
-// protect ALL notes routes with JWT auth guard
-@UseGuards(JwtAuthGuard)   
+@UseGuards(JwtAuthGuard)
 @Controller('notes')
 export class NotesController {
 
@@ -18,6 +22,8 @@ export class NotesController {
   // GET /notes/search?query=nestjs
   @Get('search')
   searchNotes(@Request() req, @Query('query') query: string) {
+    // guard against missing or empty query param
+    if (!query?.trim()) return [];
     return this.notesService.searchNotes(req.user.userId, query);
   }
 
@@ -29,11 +35,7 @@ export class NotesController {
 
   // POST /notes
   @Post()
-  createNote(@Request() req, @Body() body: {
-    title: string;
-    content?: string;
-    tags?: string[];
-  }) {
+  createNote(@Request() req, @Body() body: CreateNoteDto) {
     return this.notesService.createNote(req.user.userId, body);
   }
 
@@ -42,7 +44,7 @@ export class NotesController {
   updateNote(
     @Param('id') id: string,
     @Request() req,
-    @Body() body: { title?: string; content?: string; tags?: string[] }
+    @Body() body: UpdateNoteDto
   ) {
     return this.notesService.updateNote(id, req.user.userId, body);
   }
