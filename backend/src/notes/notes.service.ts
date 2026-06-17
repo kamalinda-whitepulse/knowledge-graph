@@ -73,7 +73,7 @@ export class NotesService {
   // --- SEARCH ------------------------------------
   async searchNotes(userId: string, query: string) {
     // escape special characters to prevent ReDoS attacks
-    const escaped = query.replace(/[.*+?^()|[\]\\]/g, '\\$&');
+    const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     // case insensitive
     const regex = new RegExp(escaped, 'i');
     return this.noteModel.find({
