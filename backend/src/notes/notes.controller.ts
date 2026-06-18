@@ -6,6 +6,7 @@ import { NotesService } from './notes.service';
 import { JwtAuthGuard } from '../common/jwt-auth.guard';
 import { CreateNoteDto } from './dto/create-note.dto';
 import { UpdateNoteDto } from './dto/update-note.dto';
+import { ParseObjectIdPipe } from '../common/parse-object-id.pipe';
 
 @UseGuards(JwtAuthGuard)
 @Controller('notes')
@@ -29,7 +30,10 @@ export class NotesController {
 
   // GET /notes/:id
   @Get(':id')
-  getNoteById(@Param('id') id: string, @Request() req) {
+  getNoteById(
+    @Param('id', ParseObjectIdPipe) id: string,
+    @Request() req
+  ) {
     return this.notesService.getNoteById(id, req.user.userId);
   }
 
@@ -42,7 +46,7 @@ export class NotesController {
   // PUT /notes/:id
   @Put(':id')
   updateNote(
-    @Param('id') id: string,
+    @Param('id', ParseObjectIdPipe) id: string,
     @Request() req,
     @Body() body: UpdateNoteDto
   ) {
@@ -51,7 +55,10 @@ export class NotesController {
 
   // DELETE /notes/:id
   @Delete(':id')
-  deleteNote(@Param('id') id: string, @Request() req) {
+  deleteNote(
+    @Param('id', ParseObjectIdPipe) id: string,
+    @Request() req
+  ) {
     return this.notesService.deleteNote(id, req.user.userId);
   }
 
