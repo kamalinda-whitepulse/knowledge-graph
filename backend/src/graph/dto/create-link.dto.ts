@@ -1,14 +1,12 @@
-import { IsMongoId, IsNotEmpty, IsEnum } from 'class-validator';
+import { IsMongoId, IsEnum } from 'class-validator';
 import { RelationshipType } from '../../schemas/relationship.schema';
 
 export class CreateLinkDto {
 
   @IsMongoId()
-  @IsNotEmpty()
   fromNoteId!: string;
 
   @IsMongoId()
-  @IsNotEmpty()
   toNoteId!: string;
 
   @IsEnum(RelationshipType, {

@@ -57,6 +57,10 @@ export class GraphService {
 
   // --- GET CONNECTIONS FOR A NOTE ------------------------
   async getConnections(noteId: string, userId: string) {
+    // check note exists and belongs to this user
+    const note = await this.noteModel.findOne({ _id: noteId, userId });
+    if (!note) throw new NotFoundException('Note not found');
+    
     // outgoing links — links that start from this note
     const outgoing = await this.relationshipModel
       .find({ fromNoteId: noteId, userId })
