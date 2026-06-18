@@ -12,12 +12,17 @@ export class GraphService {
     @InjectModel(Note.name) private noteModel: Model<Note>,
   ) {}
 
-  // --- CREATE LINK ----------------------------
+  // --- CREATE LINK ------------------------
   async createLink(userId: string, body: {
     fromNoteId: string;
     toNoteId: string;
     type: RelationshipType;
   }) {
+    // self-link check
+    if (body.fromNoteId === body.toNoteId) {
+      throw new BadRequestException('A note cannot be linked to itself');
+    }
+
     // check both notes exist and belong to this user
     const fromNote = await this.noteModel.findOne({ _id: body.fromNoteId, userId });
     if (!fromNote) throw new NotFoundException('Source note not found');
@@ -25,44 +30,58 @@ export class GraphService {
     const toNote = await this.noteModel.findOne({ _id: body.toNoteId, userId });
     if (!toNote) throw new NotFoundException('Target note not found');
 
-    // prevent linking a note to itself
-    if (body.fromNoteId === body.toNoteId) {
-      throw new BadRequestException('A note cannot be linked to itself');
-    }
-
-    // prevent duplicate links of the same type
+    // application level check for friendly error message
     const existing = await this.relationshipModel.findOne({
-      fromNoteId: body.fromNoteId,
-      toNoteId: body.toNoteId,
-      type: body.type,
-      userId,
-    });
-    if (existing) throw new BadRequestException('This link already exists');
-
-    return this.relationshipModel.create({
       fromNoteId: body.fromNoteId,
       toNoteId:   body.toNoteId,
       type:       body.type,
       userId,
     });
+    if (existing) throw new BadRequestException('This link already exists');
+
+    try {
+      return await this.relationshipModel.create({
+        fromNoteId: body.fromNoteId,
+        toNoteId:   body.toNoteId,
+        type:       body.type,
+        userId,
+      });
+    } catch (err: any) {
+      // catch duplicate key error from MongoDB unique index
+      if (err.code === 11000) {
+        throw new BadRequestException('This link already exists');
+      }
+      throw err;
+    }
   }
 
-  // --- GET CONNECTIONS FOR A NOTE ---------------------
+  // --- GET CONNECTIONS FOR A NOTE ------------------------
   async getConnections(noteId: string, userId: string) {
     // outgoing links — links that start from this note
     const outgoing = await this.relationshipModel
       .find({ fromNoteId: noteId, userId })
-      .populate('toNoteId', 'title tags');  // get note title and tags
+      .populate({ path: 'toNoteId', select: 'title tags' });
 
-    // incoming links
+    // incoming links - links that point to this note
     const incoming = await this.relationshipModel
       .find({ toNoteId: noteId, userId })
-      .populate('fromNoteId', 'title tags');
+      .populate({ path: 'fromNoteId', select: 'title tags' });
 
-    return { incoming, outgoing };
+    return {
+      incoming: incoming.map(rel => ({
+        linkId: rel._id,
+        type:   rel.type,
+        note:   rel.fromNoteId,
+      })),
+      outgoing: outgoing.map(rel => ({
+        linkId: rel._id,
+        type:   rel.type,
+        note:   rel.toNoteId,
+      })),
+    };
   }
 
-  // --- GET FULL GRAPH ---------------------
+  // --- GET FULL GRAPH ------------------------
   async getFullGraph(userId: string) {
     // get all notes for this user
     const notes = await this.noteModel
@@ -89,7 +108,7 @@ export class GraphService {
     return { nodes, edges };
   }
 
-  // --- DELETE LINK ----------------------------
+  // --- DELETE LINK ------------------------
   async deleteLink(linkId: string, userId: string) {
     const link = await this.relationshipModel.findOneAndDelete({
       _id: linkId,

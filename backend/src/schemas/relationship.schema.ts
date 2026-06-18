@@ -26,3 +26,9 @@ export class Relationship extends Document {
 }
 
 export const RelationshipSchema = SchemaFactory.createForClass(Relationship);
+
+//prevents duplicate links at database level
+RelationshipSchema.index(
+  { fromNoteId: 1, toNoteId: 1, type: 1, userId: 1 },
+  { unique: true }
+);
