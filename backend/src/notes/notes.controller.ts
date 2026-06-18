@@ -23,6 +23,7 @@ export class NotesController {
   // GET /notes/search?query=nestjs
   @Get('search')
   searchNotes(@Request() req, @Query('query') query: string) {
+    // guard against missing or empty query param
     if (!query?.trim()) return [];
     return this.notesService.searchNotes(req.user.userId, query);
   }
