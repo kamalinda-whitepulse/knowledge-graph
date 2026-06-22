@@ -5,8 +5,6 @@ import { AuthModule } from './auth/auth.module';
 import { GraphModule } from './graph/graph.module';
 import { NotesModule } from './notes/notes.module';
 import { DashboardModule } from './dashboard/dashboard.module';
-import { DashboardController } from './dashboard/dashboard.controller';
-import { DashboardService } from './dashboard/dashboard.service';
 
 @Module({
   imports: [
@@ -27,7 +25,5 @@ import { DashboardService } from './dashboard/dashboard.service';
     NotesModule,
     DashboardModule,
   ],
-  controllers: [DashboardController],
-  providers: [DashboardService],
-})
+})  
 export class AppModule {}

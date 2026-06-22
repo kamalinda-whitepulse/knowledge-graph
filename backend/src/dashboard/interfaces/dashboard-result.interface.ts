@@ -12,7 +12,7 @@ export interface RecentNote {
 
 export interface DashboardResult {
   totalNotes: number;
-  totalConnections: number;
-  mostConnected: MostConnectedNote[];
+  totalConnections: number;  // directed edge count (each A→B stored once)
+  mostConnected: MostConnectedNote[]; // per-note: in-degree + out-degree
   recentNotes: RecentNote[];
 }

@@ -3,7 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Note } from '../schemas/note.schema';
 import { Relationship } from '../schemas/relationship.schema';
-import { DashboardResult } from './interfaces/dashboard-result.interface';
+import { DashboardResult, RecentNote } from './interfaces/dashboard-result.interface';
 
 @Injectable()
 export class DashboardService {
@@ -16,9 +16,12 @@ export class DashboardService {
   async getDashboard(userId: string): Promise<DashboardResult> {
 
     // validate userId before constructing ObjectId
-    if (!Types.ObjectId.isValid(userId)) {
+    if (
+      !Types.ObjectId.isValid(userId) ||
+      new Types.ObjectId(userId).toHexString() !== userId
+    ) {
       throw new BadRequestException('Invalid user id');
-    }
+  }
     const userObjectId = new Types.ObjectId(userId);
 
     const [totalNotes, totalConnections, mostConnected, recentNotes] = await Promise.all([
@@ -68,7 +71,8 @@ export class DashboardService {
         .sort({ createdAt: -1 })
         .limit(5)
         // exclude _id to match mostConnected shape
-        .select('-_id title tags createdAt'), 
+        .select('-_id title tags createdAt')
+        .lean<RecentNote[]>(),
 
     ]);
 
