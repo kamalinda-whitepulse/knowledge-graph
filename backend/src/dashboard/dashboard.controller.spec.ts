@@ -10,6 +10,7 @@ describe('DashboardController', () => {
   };
 
   beforeEach(async () => {
+    jest.clearAllMocks()
     const module: TestingModule = await Test.createTestingModule({
       controllers: [DashboardController],
       providers: [

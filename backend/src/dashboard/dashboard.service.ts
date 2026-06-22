@@ -21,7 +21,7 @@ export class DashboardService {
       new Types.ObjectId(userId).toHexString() !== userId
     ) {
       throw new BadRequestException('Invalid user id');
-  }
+    }
     const userObjectId = new Types.ObjectId(userId);
 
     const [totalNotes, totalConnections, mostConnected, recentNotes] = await Promise.all([
