@@ -1,8 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Note } from '../schemas/note.schema';
 import { Relationship } from '../schemas/relationship.schema';
+import { DashboardResult } from './interfaces/dashboard-result.interface';
 
 @Injectable()
 export class DashboardService {
@@ -12,19 +13,25 @@ export class DashboardService {
     @InjectModel(Relationship.name) private relationshipModel: Model<Relationship>,
   ) {}
 
-  async getDashboard(userId: string) {
+  async getDashboard(userId: string): Promise<DashboardResult> {
+
+    // validate userId before constructing ObjectId
+    if (!Types.ObjectId.isValid(userId)) {
+      throw new BadRequestException('Invalid user id');
+    }
+    const userObjectId = new Types.ObjectId(userId);
 
     const [totalNotes, totalConnections, mostConnected, recentNotes] = await Promise.all([
 
-      // --- TOTAL NOTES --------------------------------
-      this.noteModel.countDocuments({ userId }),
+      // --- TOTAL NOTES -------------------------------------
+      this.noteModel.countDocuments({ userId: userObjectId }),
 
-      // --- TOTAL CONNECTIONS ----------------------------
-      this.relationshipModel.countDocuments({ userId }),
+      // --- TOTAL CONNECTIONS -------------------------------
+      this.relationshipModel.countDocuments({ userId: userObjectId }),
 
       // --- MOST CONNECTED NOTES (incoming + outgoing) ---
       this.relationshipModel.aggregate([
-        { $match: { userId: new Types.ObjectId(userId) } },
+        { $match: { userId: userObjectId } },
         {
           $facet: {
             outgoing: [{ $group: { _id: '$fromNoteId', count: { $sum: 1 } } }],
@@ -38,7 +45,7 @@ export class DashboardService {
         { $limit: 5 },
         {
           $lookup: {
-            from:         'notes',
+            from:         this.noteModel.collection.name, // derive at runtime, not hardcoded
             localField:   '_id',
             foreignField: '_id',
             as:           'note',
@@ -55,12 +62,13 @@ export class DashboardService {
         },
       ]),
 
-      // --- RECENTLY CREATED NOTES ---------------------
+      // --- RECENTLY CREATED NOTES ----------------------
       this.noteModel
-        .find({ userId })
+        .find({ userId: userObjectId })
         .sort({ createdAt: -1 })
         .limit(5)
-        .select('title tags createdAt'),
+        // exclude _id to match mostConnected shape
+        .select('-_id title tags createdAt'), 
 
     ]);
 
