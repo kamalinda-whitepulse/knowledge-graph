@@ -1,0 +1,51 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import { DashboardController } from './dashboard.controller';
+import { DashboardService } from './dashboard.service';
+
+describe('DashboardController', () => {
+  let controller: DashboardController;
+  let mockDashboardService: any;
+
+  beforeEach(async () => {
+    // create fresh mock every test - no bleed between tests
+    mockDashboardService = {
+      getDashboard: jest.fn(),
+    };
+
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [DashboardController],
+      providers: [
+        { provide: DashboardService, useValue: mockDashboardService },
+      ],
+    }).compile();
+
+    controller = module.get<DashboardController>(DashboardController);
+  });
+
+  it('should be defined', () => {
+    expect(controller).toBeDefined();
+  });
+
+  it('should call dashboardService.getDashboard with userId', () => {
+    const req = { user: { userId: '507f1f77bcf86cd799439011' } } as any;
+    controller.getDashboard(req);
+    expect(mockDashboardService.getDashboard)
+      .toHaveBeenCalledWith('507f1f77bcf86cd799439011');
+  });
+
+  it('should return the result from dashboardService.getDashboard', async () => {
+    const mockResult = {
+      totalNotes:       2,
+      totalConnections: 1,
+      mostConnected:    [],
+      recentNotes:      [],
+    };
+    mockDashboardService.getDashboard.mockResolvedValue(mockResult);
+
+    const req = { user: { userId: '507f1f77bcf86cd799439011' } } as any;
+    const result = await controller.getDashboard(req);
+
+    expect(result).toBe(mockResult);
+  });
+
+});
