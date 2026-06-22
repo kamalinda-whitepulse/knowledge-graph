@@ -4,13 +4,14 @@ import { DashboardService } from './dashboard.service';
 
 describe('DashboardController', () => {
   let controller: DashboardController;
-
-  const mockDashboardService = {
-    getDashboard: jest.fn(),
-  };
+  let mockDashboardService: any;
 
   beforeEach(async () => {
-    jest.clearAllMocks()
+    // create fresh mock every test - no bleed between tests
+    mockDashboardService = {
+      getDashboard: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [DashboardController],
       providers: [

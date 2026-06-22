@@ -7,28 +7,30 @@ import { BadRequestException } from '@nestjs/common';
 
 describe('DashboardService', () => {
   let service: DashboardService;
-
-  // chainable mock for find().sort().limit().select().lean()
-  const mockFindChain = {
-    sort:   jest.fn().mockReturnThis(),
-    limit:  jest.fn().mockReturnThis(),
-    select: jest.fn().mockReturnThis(),
-    lean:   jest.fn().mockResolvedValue([]),
-  };
-
-  const mockNoteModel = {
-    countDocuments: jest.fn(),
-    find:           jest.fn().mockReturnValue(mockFindChain),
-    collection:     { name: 'notes' },
-  };
-
-  const mockRelationshipModel = {
-    countDocuments: jest.fn(),
-    aggregate:      jest.fn().mockResolvedValue([]),
-  };
+  let mockFindChain: any;
+  let mockNoteModel: any;
+  let mockRelationshipModel: any;
 
   beforeEach(async () => {
-    jest.clearAllMocks();
+    // create fresh mocks every test - no bleed between tests
+    mockFindChain = {
+      sort:   jest.fn().mockReturnThis(),
+      limit:  jest.fn().mockReturnThis(),
+      select: jest.fn().mockReturnThis(),
+      lean:   jest.fn().mockResolvedValue([]),
+    };
+
+    mockNoteModel = {
+      countDocuments: jest.fn(),
+      find:           jest.fn().mockReturnValue(mockFindChain),
+      collection:     { name: 'notes' },
+    };
+
+    mockRelationshipModel = {
+      countDocuments: jest.fn(),
+      aggregate:      jest.fn().mockResolvedValue([]),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         DashboardService,
