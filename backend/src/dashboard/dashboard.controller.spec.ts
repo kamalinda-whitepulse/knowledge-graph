@@ -27,7 +27,23 @@ describe('DashboardController', () => {
   it('should call dashboardService.getDashboard with userId', () => {
     const req = { user: { userId: '507f1f77bcf86cd799439011' } } as any;
     controller.getDashboard(req);
-    expect(mockDashboardService.getDashboard).toHaveBeenCalledWith('507f1f77bcf86cd799439011');
+    expect(mockDashboardService.getDashboard)
+      .toHaveBeenCalledWith('507f1f77bcf86cd799439011');
+  });
+
+  it('should return the result from dashboardService.getDashboard', async () => {
+    const mockResult = {
+      totalNotes:       2,
+      totalConnections: 1,
+      mostConnected:    [],
+      recentNotes:      [],
+    };
+    mockDashboardService.getDashboard.mockResolvedValue(mockResult);
+
+    const req = { user: { userId: '507f1f77bcf86cd799439011' } } as any;
+    const result = await controller.getDashboard(req);
+
+    expect(result).toBe(mockResult);
   });
 
 });
