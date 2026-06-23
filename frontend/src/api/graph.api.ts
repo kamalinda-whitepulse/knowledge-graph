@@ -1,18 +1,19 @@
 import api from './axios';
+import type { GraphData, Connection } from '../types/graph.types';
 import { RelationshipType } from '../types/graph.types';
 
 export const graphApi = {
 
   getFullGraph: () =>
-    api.get('/graph'),
+    api.get<GraphData>('/graph'),
 
   getConnections: (noteId: string) =>
-    api.get(`/graph/${noteId}`),
+    api.get<{ incoming: Connection[]; outgoing: Connection[] }>(`/graph/${noteId}`),
 
   createLink: (fromNoteId: string, toNoteId: string, type: RelationshipType) =>
-    api.post('/graph/link', { fromNoteId, toNoteId, type }),
+    api.post<void>('/graph/link', { fromNoteId, toNoteId, type }),
 
   deleteLink: (linkId: string) =>
-    api.delete(`/graph/link/${linkId}`),
+    api.delete<void>(`/graph/link/${linkId}`),
 
 };
