@@ -26,7 +26,7 @@ export type GraphData = {
 };
 
 export type Connection = {
-  linkId: string;
+  linkId: string; // backend maps _id to linkId in graph.service.ts
   type: RelationshipType;
   note: {
     _id: string;
