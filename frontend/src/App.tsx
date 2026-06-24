@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { useAuthStore } from './store/authStore';
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -12,6 +12,15 @@ import Search     from './pages/Search';
 
 // layout
 import Navbar from './components/Navbar';
+
+function ProtectedLayout() {
+  return (
+    <ProtectedRoute>
+      <Navbar />
+      <Outlet />
+    </ProtectedRoute>
+  );
+}
 
 export default function App() {
   const token = useAuthStore((s) => s.token);
@@ -30,43 +39,13 @@ export default function App() {
           element={token ? <Navigate to="/" replace /> : <Register />}
         />
 
-        {/* Protected routes - all wrapped with Navbar */}
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <Navbar />
-              <Dashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/graph"
-          element={
-            <ProtectedRoute>
-              <Navbar />
-              <GraphView />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/notes/:id"
-          element={
-            <ProtectedRoute>
-              <Navbar />
-              <NoteDetail />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/search"
-          element={
-            <ProtectedRoute>
-              <Navbar />
-              <Search />
-            </ProtectedRoute>
-          }
-        />
+        {/* Protected routes - share one Navbar via layout route */}
+        <Route element={<ProtectedLayout />}>
+          <Route path="/"          element={<Dashboard />} />
+          <Route path="/graph"     element={<GraphView />} />
+          <Route path="/notes/:id" element={<NoteDetail />} />
+          <Route path="/search"    element={<Search />} />
+        </Route>
 
         {/* Catch all - redirect to home */}
         <Route path="*" element={<Navigate to="/" replace />} />

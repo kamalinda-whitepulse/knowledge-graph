@@ -29,12 +29,12 @@ export default function Register() {
   return (
     <div className="min-h-screen bg-cover bg-center flex items-center justify-center gap-8 sm:justify-evenly max-sm:flex-col backdrop-blur-2xl">
 
-      {/* Left side — Logo */}
+      {/* Left side - Logo */}
       <div className="flex justify-center items-center">
         <img src={logo} alt="KnowledgeGraph Logo" className="w-64" />
       </div>
 
-      {/* Right side — Form */}
+      {/* Right side - Form */}
       <form onSubmit={handleSubmit} className="border-2 bg-black/80 text-white border-gray-500 p-6 flex flex-col gap-6 rounded-lg shadow-lg w-full max-w-sm">
 
         <h2 className="font-medium text-2xl">Sign up</h2>
@@ -72,8 +72,8 @@ export default function Register() {
         </button>
 
         <div className="flex items-center gap-2 text-sm text-gray-500">
-          <input type="checkbox" required />
-          <p>Agree to the terms of use & privacy policy.</p>
+          <input type="checkbox" id="terms" required />
+          <label htmlFor="terms">Agree to the terms of use &amp; privacy policy.</label>
         </div>
 
         <div className="flex flex-col gap-2">
