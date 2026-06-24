@@ -1,6 +1,5 @@
 import api from './axios';
-import type { GraphData, Connection } from '../types/graph.types';
-import { RelationshipType } from '../types/graph.types';
+import type { GraphData, Connection, RelationshipType } from '../types/graph.types';
 
 export const graphApi = {
 

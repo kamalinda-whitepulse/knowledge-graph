@@ -1,9 +1,11 @@
-export enum RelationshipType {
-  RELATED_TO = 'Related To',
-  DEPENDS_ON = 'Depends On',
-  REFERENCES = 'References',
-  PARENT_OF  = 'Parent Of',
-}
+export const RelationshipType = {
+  RELATED_TO: 'Related To',
+  DEPENDS_ON: 'Depends On',
+  REFERENCES: 'References',
+  PARENT_OF:  'Parent Of',
+} as const;
+
+export type RelationshipType = typeof RelationshipType[keyof typeof RelationshipType];
 
 export type GraphNode = {
   id: string;
@@ -26,11 +28,11 @@ export type GraphData = {
 };
 
 export type Connection = {
-  linkId: string; // backend maps _id to linkId in graph.service.ts
+  linkId: string;  // backend maps _id to linkId in graph.service.ts
   type: RelationshipType;
   note: {
-    _id: string;
+    _id:   string;
     title: string;
-    tags: string[];
+    tags:  string[];
   };
 };
