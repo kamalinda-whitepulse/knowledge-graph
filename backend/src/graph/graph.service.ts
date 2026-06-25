@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { Relationship, RelationshipType } from '../schemas/relationship.schema';
 import { Note } from '../schemas/note.schema';
 
@@ -10,7 +10,7 @@ export class GraphService {
   constructor(
     @InjectModel(Relationship.name) private relationshipModel: Model<Relationship>,
     @InjectModel(Note.name) private noteModel: Model<Note>,
-  ) {}
+  ) { }
 
   // --- CREATE LINK ------------------------
   async createLink(userId: string, body: {
@@ -18,33 +18,35 @@ export class GraphService {
     toNoteId: string;
     type: RelationshipType;
   }) {
+    const userObjectId = new Types.ObjectId(userId);
+
     // self-link check
     if (body.fromNoteId === body.toNoteId) {
       throw new BadRequestException('A note cannot be linked to itself');
     }
 
     // check both notes exist and belong to this user
-    const fromNote = await this.noteModel.findOne({ _id: body.fromNoteId, userId });
+    const fromNote = await this.noteModel.findOne({ _id: body.fromNoteId, userId: userObjectId });
     if (!fromNote) throw new NotFoundException('Source note not found');
 
-    const toNote = await this.noteModel.findOne({ _id: body.toNoteId, userId });
+    const toNote = await this.noteModel.findOne({ _id: body.toNoteId, userId: userObjectId });
     if (!toNote) throw new NotFoundException('Target note not found');
 
     // application level check for friendly error message
     const existing = await this.relationshipModel.findOne({
       fromNoteId: body.fromNoteId,
-      toNoteId:   body.toNoteId,
-      type:       body.type,
-      userId,
+      toNoteId: body.toNoteId,
+      type: body.type,
+      userId: userObjectId,
     });
     if (existing) throw new BadRequestException('This link already exists');
 
     try {
       return await this.relationshipModel.create({
         fromNoteId: body.fromNoteId,
-        toNoteId:   body.toNoteId,
-        type:       body.type,
-        userId,
+        toNoteId: body.toNoteId,
+        type: body.type,
+        userId: userObjectId,
       });
     } catch (err: any) {
       // catch duplicate key error from MongoDB unique index
@@ -57,56 +59,63 @@ export class GraphService {
 
   // --- GET CONNECTIONS FOR A NOTE ------------------------
   async getConnections(noteId: string, userId: string) {
-    // check note exists and belongs to this user
-    const note = await this.noteModel.findOne({ _id: noteId, userId });
+    const userObjectId = new Types.ObjectId(userId);
+
+    // check note exists - don't require userId match to just view connections
+    const note = await this.noteModel.findOne({
+      _id: noteId,
+      userId: userObjectId
+    });
     if (!note) throw new NotFoundException('Note not found');
-    
-    // outgoing links — links that start from this note
+
+    // outgoing links - links that start from this note
     const outgoing = await this.relationshipModel
-      .find({ fromNoteId: noteId, userId })
+      .find({ fromNoteId: noteId, userId: userObjectId })
       .populate({ path: 'toNoteId', select: 'title tags' });
 
     // incoming links - links that point to this note
     const incoming = await this.relationshipModel
-      .find({ toNoteId: noteId, userId })
+      .find({ toNoteId: noteId, userId: userObjectId })
       .populate({ path: 'fromNoteId', select: 'title tags' });
 
     return {
       incoming: incoming.map(rel => ({
         linkId: rel._id,
-        type:   rel.type,
-        note:   rel.fromNoteId,
+        type: rel.type,
+        note: rel.fromNoteId,
       })),
       outgoing: outgoing.map(rel => ({
         linkId: rel._id,
-        type:   rel.type,
-        note:   rel.toNoteId,
+        type: rel.type,
+        note: rel.toNoteId,
       })),
     };
   }
 
   // --- GET FULL GRAPH ------------------------
   async getFullGraph(userId: string) {
+    const userObjectId = new Types.ObjectId(userId);
+
     // get all notes for this user
     const notes = await this.noteModel
-      .find({ userId })
+      .find({ userId: userObjectId })
       .select('title tags');
 
     // get all relationships for this user
     const relationships = await this.relationshipModel
-      .find({ userId });
+      .find({ userId: userObjectId });
 
     // format for React Flow
     const nodes = notes.map(note => ({
-      id:   note._id.toString(),
+      id: note._id.toString(),
       data: { label: note.title, tags: note.tags },
     }));
 
     const edges = relationships.map(rel => ({
-      id:     rel._id.toString(),
+      id: rel._id.toString(),
       source: rel.fromNoteId.toString(),
       target: rel.toNoteId.toString(),
-      label:  rel.type,
+      label: rel.type,
     }));
 
     return { nodes, edges };
@@ -116,7 +125,7 @@ export class GraphService {
   async deleteLink(linkId: string, userId: string) {
     const link = await this.relationshipModel.findOneAndDelete({
       _id: linkId,
-      userId,
+      userId: new Types.ObjectId(userId),
     });
     if (!link) throw new NotFoundException('Link not found');
     return { message: 'Link deleted successfully' };

@@ -15,7 +15,6 @@ export class DashboardService {
 
   async getDashboard(userId: string): Promise<DashboardResult> {
 
-    // validate userId before constructing ObjectId
     if (
       !Types.ObjectId.isValid(userId) ||
       new Types.ObjectId(userId).toHexString() !== userId
@@ -32,23 +31,24 @@ export class DashboardService {
       // --- TOTAL CONNECTIONS -------------------------------
       this.relationshipModel.countDocuments({ userId: userObjectId }),
 
-      // --- MOST CONNECTED NOTES (incoming + outgoing) ---
+      // --- MOST CONNECTED NOTES (incoming + outgoing) ------
       this.relationshipModel.aggregate([
-        { $match: { userId: userObjectId } },
+        { $match: { $or: [{ userId: userObjectId }, { userId: userId }] } },
+        // Emit two docs per relationship: one for source, one for target
+        { $project: { noteIds: ['$fromNoteId', '$toNoteId'] } },
+        { $unwind: '$noteIds' },
+        // fromNoteId/toNoteId are stored as strings - convert to ObjectId for $lookup
         {
-          $facet: {
-            outgoing: [{ $group: { _id: '$fromNoteId', count: { $sum: 1 } } }],
-            incoming: [{ $group: { _id: '$toNoteId',   count: { $sum: 1 } } }],
+          $addFields: {
+            noteIdObj: { $toObjectId: '$noteIds' },
           }
         },
-        { $project: { combined: { $concatArrays: ['$outgoing', '$incoming'] } } },
-        { $unwind: '$combined' },
-        { $group: { _id: '$combined._id', count: { $sum: '$combined.count' } } },
+        { $group: { _id: '$noteIdObj', count: { $sum: 1 } } },
         { $sort: { count: -1 } },
         { $limit: 5 },
         {
           $lookup: {
-            from:         this.noteModel.collection.name, // derive at runtime, not hardcoded
+            from:         this.noteModel.collection.name,
             localField:   '_id',
             foreignField: '_id',
             as:           'note',
@@ -70,7 +70,6 @@ export class DashboardService {
         .find({ userId: userObjectId })
         .sort({ createdAt: -1 })
         .limit(5)
-        // exclude _id to match mostConnected shape
         .select('-_id title tags createdAt')
         .lean<RecentNote[]>(),
 
