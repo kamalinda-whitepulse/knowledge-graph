@@ -28,7 +28,7 @@ export default function NoteDetail() {
   const [showLinkModal, setShowLinkModal]   = useState(false);
   const [allNotes, setAllNotes]             = useState<Note[]>([]);
   const [linkToId, setLinkToId]             = useState('');
-  const [linkType, setLinkType]             = useState<string>(RelationshipType.RELATED_TO);
+  const [linkType, setLinkType]             = useState<RelationshipType>(RelationshipType.RELATED_TO);
   const [linking, setLinking]               = useState(false);
 
   useEffect(() => {
@@ -100,7 +100,7 @@ export default function NoteDetail() {
     if (!id || !linkToId) return;
     setLinking(true);
     try {
-      await graphApi.createLink(id, linkToId, linkType as any);
+      await graphApi.createLink(id, linkToId, linkType);
       const connRes = await graphApi.getConnections(id);
       setOutgoing(connRes.data.outgoing);
       setShowLinkModal(false);
@@ -265,11 +265,12 @@ export default function NoteDetail() {
                   {outgoing.map((conn) => (
                     <div key={conn.linkId} className="flex items-center justify-between gap-2">
                       <div>
+                        {/* use conn.note directly  */}
                         <button
-                          onClick={() => navigate(`/notes/${(conn.note as any)._id}`)}
+                          onClick={() => navigate(`/notes/${conn.note._id}`)}
                           className="text-sm text-violet-600 hover:underline font-medium text-left"
                         >
-                          {(conn.note as any).title}
+                          {conn.note.title}
                         </button>
                         <p className="text-xs text-gray-400">{conn.type}</p>
                       </div>
@@ -296,11 +297,12 @@ export default function NoteDetail() {
                 <div className="flex flex-col gap-2">
                   {incoming.map((conn) => (
                     <div key={conn.linkId}>
+                      {/* use conn.note directly */}
                       <button
-                        onClick={() => navigate(`/notes/${(conn.note as any)._id}`)}
+                        onClick={() => navigate(`/notes/${conn.note._id}`)}
                         className="text-sm text-violet-600 hover:underline font-medium text-left"
                       >
-                        {(conn.note as any).title}
+                        {conn.note.title}
                       </button>
                       <p className="text-xs text-gray-400">{conn.type}</p>
                     </div>
@@ -350,7 +352,8 @@ export default function NoteDetail() {
 
             <select
               value={linkType}
-              onChange={(e) => setLinkType(e.target.value)}
+              // cast only at the onChange boundary where raw string comes in
+              onChange={(e) => setLinkType(e.target.value as RelationshipType)}
               className="p-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
             >
               {Object.values(RelationshipType).map((type) => (

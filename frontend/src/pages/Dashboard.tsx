@@ -6,60 +6,37 @@ import { useNotesStore } from '../store/notesStore';
 import type { DashboardResult } from '../types/dashboard.types';
 import NoteCard from '../components/NoteCard';
 import TagBadge from '../components/TagBadge';
+import NoteEditor from '../components/NoteEditor';
 
 export default function Dashboard() {
-  const navigate  = useNavigate();
-  const { notes, setNotes } = useNotesStore();
+  const navigate = useNavigate();
+  // Fix 3: use selectors to avoid subscribing to the entire store
+  const notes    = useNotesStore((s) => s.notes);
+  const setNotes = useNotesStore((s) => s.setNotes);
 
-  const [stats, setStats]     = useState<DashboardResult | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError]     = useState('');
-  const [showEditor, setShowEditor]   = useState(false);
-  const [newTitle, setNewTitle]       = useState('');
-  const [newContent, setNewContent]   = useState('');
-  const [newTags, setNewTags]         = useState('');
-  const [creating, setCreating]       = useState(false);
+  const [stats, setStats]         = useState<DashboardResult | null>(null);
+  const [loading, setLoading]     = useState(true);
+  const [error, setError]         = useState('');
+  const [showEditor, setShowEditor] = useState(false);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [dashRes, notesRes] = await Promise.all([
-          dashboardApi.getStats(),
-          notesApi.getAll(),
-        ]);
-        setStats(dashRes.data);
-        setNotes(notesRes.data);
-      } catch {
-        setError('Failed to load dashboard');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, [setNotes]);
-
-  const handleCreateNote = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setCreating(true);
+  const fetchData = async () => {
     try {
-      const tags = newTags.split(',').map(t => t.trim()).filter(Boolean);
-      await notesApi.create({ title: newTitle, content: newContent, tags });
       const [dashRes, notesRes] = await Promise.all([
         dashboardApi.getStats(),
         notesApi.getAll(),
       ]);
       setStats(dashRes.data);
       setNotes(notesRes.data);
-      setNewTitle('');
-      setNewContent('');
-      setNewTags('');
-      setShowEditor(false);
     } catch {
-      setError('Failed to create note');
+      setError('Failed to load dashboard');
     } finally {
-      setCreating(false);
+      setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchData();
+  }, [setNotes]);
 
   if (loading) {
     return (
@@ -96,58 +73,12 @@ export default function Dashboard() {
           <p className="text-red-500 text-sm mb-4">{error}</p>
         )}
 
-        {/* Create Note Modal */}
+        {/* Fix 4: use NoteEditor with onSuccess to refresh stats after creation */}
         {showEditor && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <form
-              onSubmit={handleCreateNote}
-              className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md flex flex-col gap-4"
-            >
-              <h2 className="text-lg font-semibold text-gray-900">New Note</h2>
-
-              <input
-                type="text"
-                placeholder="Title"
-                value={newTitle}
-                onChange={(e) => setNewTitle(e.target.value)}
-                required
-                className="p-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
-              />
-
-              <textarea
-                placeholder="Content"
-                value={newContent}
-                onChange={(e) => setNewContent(e.target.value)}
-                rows={4}
-                className="p-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 resize-none"
-              />
-
-              <input
-                type="text"
-                placeholder="Tags (comma separated)"
-                value={newTags}
-                onChange={(e) => setNewTags(e.target.value)}
-                className="p-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
-              />
-
-              <div className="flex gap-3 justify-end">
-                <button
-                  type="button"
-                  onClick={() => setShowEditor(false)}
-                  className="text-sm text-gray-500 px-4 py-2 rounded-lg hover:bg-gray-100"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={creating}
-                  className="text-sm bg-gradient-to-r from-purple-500 to-violet-600 text-white px-4 py-2 rounded-lg disabled:opacity-50"
-                >
-                  {creating ? 'Creating...' : 'Create'}
-                </button>
-              </div>
-            </form>
-          </div>
+          <NoteEditor
+            onClose={() => setShowEditor(false)}
+            onSuccess={fetchData}
+          />
         )}
 
         {/* Stats row */}
@@ -268,4 +199,3 @@ export default function Dashboard() {
     </div>
   );
 }
-

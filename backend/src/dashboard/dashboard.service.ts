@@ -33,16 +33,12 @@ export class DashboardService {
 
       // --- MOST CONNECTED NOTES (incoming + outgoing) ------
       this.relationshipModel.aggregate([
-        { $match: { $or: [{ userId: userObjectId }, { userId: userId }] } },
+        { $match: { userId: userObjectId } },
         // Emit two docs per relationship: one for source, one for target
         { $project: { noteIds: ['$fromNoteId', '$toNoteId'] } },
         { $unwind: '$noteIds' },
         // fromNoteId/toNoteId are stored as strings - convert to ObjectId for $lookup
-        {
-          $addFields: {
-            noteIdObj: { $toObjectId: '$noteIds' },
-          }
-        },
+        { $addFields: { noteIdObj: { $toObjectId: '$noteIds' } } },
         { $group: { _id: '$noteIdObj', count: { $sum: 1 } } },
         { $sort: { count: -1 } },
         { $limit: 5 },

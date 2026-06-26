@@ -4,10 +4,12 @@ import { useNotesStore } from '../store/notesStore';
 
 type Props = {
   onClose: () => void;
+  // add optional onSuccess callback so callers can refresh after creation
+  onSuccess?: () => void;
 };
 
-export default function NoteEditor({ onClose }: Props) {
-  const { addNote } = useNotesStore();
+export default function NoteEditor({ onClose, onSuccess }: Props) {
+  const addNote = useNotesStore((s) => s.addNote);
 
   const [title, setTitle]     = useState('');
   const [content, setContent] = useState('');
@@ -28,6 +30,7 @@ export default function NoteEditor({ onClose }: Props) {
         tags: tagList,
       });
       addNote(res.data);
+      onSuccess?.();
       onClose();
     } catch {
       setError('Failed to create note');
