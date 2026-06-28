@@ -14,7 +14,6 @@ export default function SearchBar({ onSearch, loading, placeholder = 'Search not
     const query = e.target.value;
     setValue(query);
 
-    // debounce - wait 400ms after user stops typing before searching
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       onSearch(query);
@@ -22,6 +21,7 @@ export default function SearchBar({ onSearch, loading, placeholder = 'Search not
   };
 
   const handleClear = () => {
+    if (debounceRef.current) clearTimeout(debounceRef.current); // cancel pending timer
     setValue('');
     onSearch('');
   };
@@ -44,10 +44,11 @@ export default function SearchBar({ onSearch, loading, placeholder = 'Search not
         className="w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 bg-white"
       />
 
-      {/* Clear button */}
-      {value && (
+      {/* Clear button - only show when not loading to prevent overlap with spinner */}
+      {value && !loading && (
         <button
           onClick={handleClear}
+          aria-label="Clear search"
           className="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-600"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -57,7 +58,7 @@ export default function SearchBar({ onSearch, loading, placeholder = 'Search not
         </button>
       )}
 
-      {/* Loading indicator */}
+      {/* Loading spinner */}
       {loading && (
         <div className="absolute inset-y-0 right-3 flex items-center">
           <div className="w-4 h-4 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { notesApi } from '../api/notes.api';
 import type { Note } from '../types/note.types';
 import SearchBar from '../components/SearchBar';
@@ -11,27 +11,33 @@ export default function Search() {
   const [searched, setSearched] = useState(false);
   const [error, setError]       = useState('');
 
+  // monotonic counter to discard stale responses
+  const latestSearchRef = useRef(0);
+
   const handleSearch = async (q: string) => {
     setQuery(q);
 
-    // if query is empty clear results
     if (!q.trim()) {
       setResults([]);
       setSearched(false);
       return;
     }
 
+    // increment counter for this request
+    const id = ++latestSearchRef.current;
     setLoading(true);
     setError('');
 
     try {
       const res = await notesApi.search(q);
+      if (id !== latestSearchRef.current) return; // stale response — discard
       setResults(res.data);
       setSearched(true);
     } catch {
+      if (id !== latestSearchRef.current) return;
       setError('Failed to search notes');
     } finally {
-      setLoading(false);
+      if (id === latestSearchRef.current) setLoading(false);
     }
   };
 
@@ -56,7 +62,7 @@ export default function Search() {
           <p className="text-red-500 text-sm mb-4">{error}</p>
         )}
 
-        {/* Initial state — not searched yet */}
+        {/* Initial state */}
         {!searched && !loading && (
           <div className="text-center py-16">
             <div className="w-16 h-16 bg-violet-100 rounded-full flex items-center justify-center mx-auto mb-4">
