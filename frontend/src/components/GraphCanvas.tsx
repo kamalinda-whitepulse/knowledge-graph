@@ -11,9 +11,11 @@ import {
   type Connection,
   type Node,
   type Edge,
+  type NodeChange,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import type { GraphData } from '../types/graph.types';
+import { useGraphStore } from '../store/graphStore';
 
 type Props = {
   data: GraphData;
@@ -36,16 +38,24 @@ const nodeDefaults = {
   },
 };
 
+// Deterministic fallback position - spreads nodes in a grid so the
+// initial layout is always the same when there are no saved positions.
+function defaultPosition(index: number, total: number) {
+  const cols  = Math.ceil(Math.sqrt(total));
+  const col   = index % cols;
+  const row   = Math.floor(index / cols);
+  return { x: col * 220 + 60, y: row * 160 + 60 };
+}
+
 export default function GraphCanvas({ data, onNodeClick }: Props) {
-  // convert API data to React Flow format
-  const initialNodes: Node[] = data.nodes.map((n) => ({
+  const savePositions = useGraphStore((s) => s.savePositions);
+  const getPosition   = useGraphStore((s) => s.getPosition);
+
+  // Use saved position if it exists, otherwise fall back to deterministic grid.
+  const initialNodes: Node[] = data.nodes.map((n, i) => ({
     id:       n.id,
-    position: {
-      // spread nodes in a circle layout
-      x: Math.random() * 600,
-      y: Math.random() * 400,
-    },
-    data:  { label: n.data.label },
+    position: getPosition(n.id) ?? defaultPosition(i, data.nodes.length),
+    data:     { label: n.data.label },
     ...nodeDefaults,
   }));
 
@@ -60,7 +70,7 @@ export default function GraphCanvas({ data, onNodeClick }: Props) {
     labelBgStyle: { fill: '#ede9fe', fillOpacity: 0.8 },
   }));
 
-  const [nodes, , onNodesChange] = useNodesState(initialNodes);
+  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
   const onConnect = useCallback(
@@ -68,16 +78,32 @@ export default function GraphCanvas({ data, onNodeClick }: Props) {
     [setEdges]
   );
 
+  // Save positions to the store whenever nodes are moved.
+  const handleNodesChange = useCallback(
+    (changes: NodeChange[]) => {
+      onNodesChange(changes);
+      // Persist after any position change (drag)
+      const hasDrag = changes.some((c) => c.type === 'position' && !c.dragging);
+      if (hasDrag) {
+        setNodes((current) => {
+          savePositions(current);
+          return current;
+        });
+      }
+    },
+    [onNodesChange, setNodes, savePositions]
+  );
+
   return (
     <div style={{ width: '100%', height: '100%' }}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
-        onNodesChange={onNodesChange}
+        onNodesChange={handleNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         onNodeClick={(_, node) => onNodeClick(node.id)}
-        fitView
+        fitView={!Object.keys(useGraphStore.getState().nodePositions).length}
         attributionPosition="bottom-right"
       >
         <MiniMap
