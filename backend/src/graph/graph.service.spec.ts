@@ -116,10 +116,7 @@ describe('GraphService', () => {
   describe('getFullGraph', () => {
     it('should return nodes and edges', async () => {
       mockNoteModel.find.mockReturnValue({ select: jest.fn().mockResolvedValue([fakeNoteA]) });
-      mockRelationshipModel.find.mockReturnValue({ populate: jest.fn().mockResolvedValue([fakeLink]) });
-      // override find to return plain array for relationships
       mockRelationshipModel.find.mockResolvedValue([fakeLink]);
-      mockNoteModel.find.mockReturnValue({ select: jest.fn().mockResolvedValue([fakeNoteA]) });
       const result = await service.getFullGraph(userId);
       expect(result).toHaveProperty('nodes');
       expect(result).toHaveProperty('edges');

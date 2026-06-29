@@ -7,8 +7,6 @@ import {
   BackgroundVariant,
   useNodesState,
   useEdgesState,
-  addEdge,
-  type Connection,
   type Node,
   type Edge,
   type NodeChange,
@@ -50,6 +48,9 @@ function defaultPosition(index: number, total: number) {
 export default function GraphCanvas({ data, onNodeClick }: Props) {
   const savePositions = useGraphStore((s) => s.savePositions);
   const getPosition   = useGraphStore((s) => s.getPosition);
+  // Fix 2: use hook selector instead of static getState() so component
+  // re-renders correctly if nodePositions changes while mounted.
+  const hasPositions  = useGraphStore((s) => Object.keys(s.nodePositions).length > 0);
 
   // Use saved position if it exists, otherwise fall back to deterministic grid.
   const initialNodes: Node[] = data.nodes.map((n, i) => ({
@@ -71,12 +72,7 @@ export default function GraphCanvas({ data, onNodeClick }: Props) {
   }));
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
-
-  const onConnect = useCallback(
-    (params: Connection) => setEdges((eds) => addEdge(params, eds)),
-    [setEdges]
-  );
+  const [edges, , onEdgesChange] = useEdgesState(initialEdges);
 
   // Save positions to the store whenever nodes are moved.
   const handleNodesChange = useCallback(
@@ -101,9 +97,8 @@ export default function GraphCanvas({ data, onNodeClick }: Props) {
         edges={edges}
         onNodesChange={handleNodesChange}
         onEdgesChange={onEdgesChange}
-        onConnect={onConnect}
         onNodeClick={(_, node) => onNodeClick(node.id)}
-        fitView={!Object.keys(useGraphStore.getState().nodePositions).length}
+        fitView={!hasPositions}
         attributionPosition="bottom-right"
       >
         <MiniMap
