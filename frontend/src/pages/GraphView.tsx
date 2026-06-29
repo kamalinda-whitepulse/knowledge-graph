@@ -94,7 +94,6 @@ export default function GraphView() {
       )}
 
       {/* Graph canvas */}
-      {/* Graph canvas */}
       {graphData && graphData.nodes.length > 0 && (
         <div className="relative" style={{ height: 'calc(100vh - 140px)' }}>
 
