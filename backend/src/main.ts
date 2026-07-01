@@ -17,25 +17,26 @@ async function bootstrap() {
   }));
 
   // Swagger setup
-  const config = new DocumentBuilder()
-    .setTitle('Knowledge Graph API')
-    .setDescription('API documentation for the Personal Knowledge Graph Builder')
-    .setVersion('1.0')
-    .addBearerAuth(
-      {
-        type: 'http',
-        scheme: 'bearer',
-        bearerFormat: 'JWT',
-        name: 'Authorization',
-        in: 'header',
-      },
-      'JWT-auth', // reference name
-    )
-    .build();
+  if (process.env.NODE_ENV !== 'production') {
+    const config = new DocumentBuilder()
+      .setTitle('Knowledge Graph API')
+      .setDescription('API documentation for the Personal Knowledge Graph Builder')
+      .setVersion('1.0')
+      .addBearerAuth(
+        {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+          name: 'Authorization',
+          in: 'header',
+        },
+        'JWT-auth',
+      )
+      .build();
 
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document);
-
+    const document = SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup('api', app, document);
+  }
   await app.listen(process.env.PORT ?? 3000);
 }
 bootstrap();
